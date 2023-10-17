@@ -10,18 +10,63 @@
         世界城市信息检索系统
     </div>
     <div class="search-container">
-      <input type="text" class="search-box" placeholder="搜索城市...">
-      <button class="search-button">搜索</button>
+      <input type="text" class="search-box" placeholder="搜索城市..." v-model="cityName">
+      <button class="search-button" @click="getSummary">搜索</button>
+      <p>{{ summary }}</p>
     </div>
+    <div id="container"></div>
   </div>
+
 </template>
 
-<script>
+<script setup>
+import { onMounted,ref } from 'vue';
+import axios from 'axios';
+const summary = ref('');
+const cityName = ref('');
+const getSummary = async () => {
+  try {
+    const response = await axios.get('http://localhost:5000/get_summary', {
+      params: {
+        keyword: cityName.value
+      }
+    });
+    summary.value = response.data.summary;
+
+  } catch (error) {
+    console.log("出错")
+    console.error(error);
+  }
+};
+
+onMounted(()=>{
+  const BMap = window.BMap;
+  var map = new BMap.Map("container");
+  map.centerAndZoom(new BMap.Point(116.404, 39.915), 11);
+	var local = new BMap.LocalSearch(map, {
+		renderOptions:{map: map}
+	});
+	local.search(cityName);
+})
+
+
 
 </script>
 
+
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+
+#container {
+  width: 300px;
+  height: 300px;
+  position: fixed;
+  left: 0px; /* 调整这里来改变地图到右侧的距离 */
+  bottom: 20px; /* 调整这里来改变地图到底部的距离 */
+  z-index: 1;
+}
+
+/* 其他CSS规则保持不变 */
 .video-background {
   position: fixed;
   top: 0;
