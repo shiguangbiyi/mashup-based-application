@@ -2,29 +2,37 @@
   <div>
     <div class="video-background">
       <video autoplay muted loop id="myVideo">
-      <source src="../assets/city.mp4" type="video/mp4">
+        <source src="../assets/city.mp4" type="video/mp4">
         Your browser does not support HTML5 video.
       </video>
     </div>
-    <div class="header">
-        世界城市信息检索系统
+    <div class="header" :class="{'header-up': isSearched}">
+      世界城市信息检索系统
     </div>
-    <div class="search-container">
+    <div class="search-container" :class="{'search-up': isSearched}">
       <input type="text" class="search-box" placeholder="搜索城市..." v-model="cityName">
       <button class="search-button" @click="getSummary">搜索</button>
-      <p>{{ summary }}</p>
+    </div>
+    <div class="summary-container" v-if="summary">
+      <div class="summary-card">
+        <p>维基百科</p>
+        <p>{{ summary }}</p>
+      </div>
     </div>
     <div id="container"></div>
   </div>
-
 </template>
 
 <script setup>
-import { onMounted,ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import axios from 'axios';
 const summary = ref('');
 const cityName = ref('');
+const isSearched = ref(false);
+
 const getSummary = async () => {
+  isSearched.value = true;
+  loadmap();
   try {
     const response = await axios.get('http://localhost:5000/get_summary', {
       params: {
@@ -32,7 +40,6 @@ const getSummary = async () => {
       }
     });
     summary.value = response.data.summary;
-
   } catch (error) {
     console.log("出错")
     console.error(error);
@@ -40,17 +47,18 @@ const getSummary = async () => {
 };
 
 onMounted(()=>{
+  loadmap();
+})
+
+const loadmap = async () => {
   const BMap = window.BMap;
   var map = new BMap.Map("container");
   map.centerAndZoom(new BMap.Point(116.404, 39.915), 11);
 	var local = new BMap.LocalSearch(map, {
 		renderOptions:{map: map}
 	});
-	local.search(cityName);
-})
-
-
-
+	local.search(cityName.value);
+}
 </script>
 
 
@@ -96,6 +104,18 @@ onMounted(()=>{
   text-transform: uppercase;
   font-family: '等线', Arial, sans-serif;
 }
+.header-up {
+  position: fixed;
+  top: 0;
+  left: 0;
+  padding: 0px;
+  margin-top: 25px;
+  margin-left: 25px;
+  text-align: left;
+  font-size: 30px;
+  width: 100%;
+  z-index: 1;
+}
 .search-container {
   display: flex;
   justify-content: center;
@@ -116,7 +136,13 @@ onMounted(()=>{
   font-family: 'Arial', sans-serif;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) inset;
 }
-
+.search-up {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+}
 .search-button {
   background-color: #3498db;
   color: #ffffff;
@@ -132,6 +158,20 @@ onMounted(()=>{
 
 .search-button:hover {
   background-color: #207cca;
+}
+.summary-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+.summary-card {
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  width: 200px;
+  text-align: center;
+  margin: 10px;
 }
 
 </style>
