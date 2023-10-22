@@ -1,45 +1,34 @@
-import urllib
-import json
-import os
+import requests
+from bs4 import BeautifulSoup
 
-def search_img(keyword):
-    search_url = 'http://image.baidu.com/i?tn=baiduimagejson&width=&height=&word=%s&rn=100&pn=0' %(keyword)
+def baidu_image_search(query):
+    # 构建搜索URL
+    search_url = f'https://image.baidu.com/search/index?tn=baiduimage&word={query}'
 
-    resp = urllib.urlopen(search_url)
-    resp_js = json.loads(resp.read().decode('gbk'))
-    print(resp_js)
-    if resp_js['data']:
-        for x in resp_js['data']:
-            url = x['objURL']
-            try:
-                print("downloading :" + url)
-                save_to_disk(url, keyword)
-            except Exception as e:
-                pass
+    # 发送HTTP请求
+    response = requests.get(search_url)
+
+    if response.status_code == 200:
+        # 解析HTML内容
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # 提取图片信息
+        image_info = soup.find_all('img')
+
+        for img in image_info:
+            # 获取图片链接和描述
+            img_src = img.get('src')
+            img_desc = img.get('alt')
+
+            # 打印图片信息
+            print(f'图片链接: {img_src}')
+            print(f'图片描述: {img_desc}')
+            print('---')
 
     else:
-        return None
+        print('请求失败')
 
-
-def save_to_disk(url, folder):
-    base_dir = os.path.dirname(__file__)
-    folder = os.path.join(base_dir, folder)
-    if not os.path.isdir(folder):
-      print('Creating ' + folder)
-      os.makedirs(folder)
-
-    filename = url.split('/')[-1]
-    fpath = os.path.join(folder, filename.encode('utf8'))
-    if os.path.exists(fpath):
-        return
-
-    resp = urllib.urlopen(url)
-    data = resp.read()
-    f = open(fpath, 'wb')
-    f.write(data)
-    f.close()
-
-
-if __name__ == '__main__':
-    keyword = input('请输入关键词')
-    search_img(keyword)
+if __name__ == "__main__":
+    query = "猫"  # 设置你要搜索的关键词
+    print(query)
+    baidu_image_search(query)

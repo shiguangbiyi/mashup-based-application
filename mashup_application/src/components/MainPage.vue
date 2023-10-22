@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="video-background">
+    <div class="video-background" >
       <video autoplay muted loop id="myVideo">
         <source src="../assets/city.mp4" type="video/mp4">
         Your browser does not support HTML5 video.
@@ -34,10 +34,19 @@
         <button class="search-button" @click="getResult">搜索</button>
       </div>
     </div>
-    <div class="image-unit">
-      <div id="image-container"></div>
-      <button id="more-button">查看更多</button>
+
+    <div class="summary-container" style="margin-top: 100px;" v-if="isSearched">
+      <div class="summary-card">
+        <div v-if="imglist && imglist.length > 0" class="image-row">
+          <div class="image-col" v-for="(img, imgIndex) in imglist.slice(0, 6)" :key="imgIndex">
+            <img :src="img.src" :alt="img.alt" class="image-item" />
+          </div>
+        </div>
+        <div v-else class="no-image-message">抱歉，本城市暂无图片资源</div>
+        <button class="card-button">查看更多</button>
+      </div>
     </div>
+
     <div class="summary-container" v-if="summary1 || summary2">
       <div class="summary-card">
         <h2 class="card-title">基本资料</h2>
@@ -49,15 +58,19 @@
         <button v-if="summary1 !== '没有找到相关词条的简述。'" class="card-button" @click="handleClick">查阅详情</button>
       </div>
     </div>
+
     <div class="economic-container" v-if="WorldBankdata[0]">
       <div class="summary-card">
         <h2 class="card-title">经济/环境</h2>
-        <div v-for="(item, index) in WorldBankdata" :key="index">
-          <a :href="item.url" target="_blank">{{ item.title }}</a>
+        <div class="link-list">
+          <a v-for="(item, index) in WorldBankdata" :key="index" :href="item.url" target="_blank" class="link-item">
+            {{ item.title }}
+          </a>
         </div>
         <span class="source-label">来自世界银行</span>
       </div>
     </div>
+
     <div class="weather-map">
       <div v-if="isSearched" class="weather">
         <div class="weather-details">
@@ -143,21 +156,18 @@ const setDefaultCityName = () => {
 };
 
 
-// 图片API
+// 图片展示，来自unsplashAPI
+const imglist = ref([])
 const fetchPic = async () => {
   try {
     const response = await axios.get(`https://api.unsplash.com/search/photos?page=1&query=${cityEnglish.value}&client_id=KaE2Y3RZ-mL65vgGnU52BYdj9tychGSsq86twcaY1ls`);
-    // cityList.value = response.data?._embedded?.['city:search-results']?.map((result) => result.matching_full_name) || [];
     const results = response.data.results;
-    const imageContainer = document.getElementById('image-container'); // 获取用于显示图片的容器元素
-
-    // 循环处理每张图片
     results.forEach(result => {
-      const imgElement = document.createElement('img'); // 创建一个 img 元素
-      imgElement.src = result.urls.regular; // 设置图片的源
-      imgElement.alt = result.alt_description; // 设置图片的描述
-      imgElement.classList.add('image-item'); // 添加自定义的样式类
-      imageContainer.appendChild(imgElement); // 将图片添加到容器中
+      const imgInfo = {
+        src: result.urls.regular,
+        alt: result.alt_description
+      };
+      imglist.value.push(imgInfo);
     });
   } catch (error) {
     console.error(error);
@@ -187,6 +197,7 @@ const getWeather = async () => {
     weatherData.description = response.data.description;
     const description = weatherData.description;
     firstPart = description.split('，')[0].trim();
+    setWeatherIcon();
   } catch (error) {
     console.log("出错")
     console.error(error);
@@ -194,17 +205,21 @@ const getWeather = async () => {
 }
 const weatherIcon = ref('');
 const setWeatherIcon = () => {
+  console.log(firstPart)
   switch (firstPart) {
     case '晴':
-      weatherIcon.value = 'sunny-icon.png';
+      weatherIcon.value = 'sunny-icon.svg';
+      console.log(weatherIcon.value)
       break;
     case '多云':
       weatherIcon.value = 'cloudy-icon.png';
+      console.log(weatherIcon.value)
       break;
     case 'rainy':
       weatherIcon.value = 'rainy-icon.png';
       break;
     default:
+      console.log(firstPart)
       weatherIcon.value = 'default-icon.png';
       break;
   }
@@ -234,7 +249,6 @@ const fetchWorldBankData = async () => {
       }
     });
     WorldBankdata.value = response.data;
-    console.log(WorldBankdata.value)
   } catch (error) {
     console.log("出错")
     console.error(error);
@@ -272,8 +286,11 @@ const getResult = async () => {
   getSummary();
   loadmap();
   getWeather();
-  setWeatherIcon();
+
   fetchWorldBankData();
+  console.log(firstPart)
+  console.log(weatherIcon)
+  console.log(weatherIcon.value)
 };
 
 </script>
@@ -307,16 +324,29 @@ const getResult = async () => {
 .option:hover {
   background-color: #ddd;
 }
-#image-container {
+.image-unit {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  margin-top: 20px;
+  margin-left: 30px;
+  width: 70%;
+}
+
+.image-row {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.image-col {
+  width: 30%;
+  margin-bottom: 20px;
 }
 
 .image-item {
-  margin: 10px;
-  width: 200px;
-  height: auto;
+  width: 100%;
+  height: 200px; /* 根据需要设置统一的高度 */
+  object-fit: cover;
 }
 
 #more-button {
@@ -350,6 +380,7 @@ const getResult = async () => {
   height: 100%;
   overflow: hidden;
   z-index: -1;
+  background-color: #666467;
 }
 
 #myVideo {
@@ -436,7 +467,7 @@ const getResult = async () => {
 }
 .summary-container {
   display: flex;
-  margin-top: 100px;
+  margin-top: 20px;
   margin-left: 30px;
 }
 
@@ -466,12 +497,35 @@ const getResult = async () => {
   border-radius: 5px;
   margin-left: auto;
   margin-top: 10px;
+  cursor: pointer;
 }
 
 .source-label {
   font-size: 12px;
   color: #888888;
   margin-top: 5px;
+}
+.card-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #333333;
+}
+.link-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+
+.link-item {
+  text-decoration: none;
+  color: #239cf9;
+  padding: 5px 0;
+  transition: color 0.3s;
+}
+
+.link-item:hover {
+  color: #207cca;
 }
 
 .weather {
@@ -519,5 +573,4 @@ const getResult = async () => {
   font-size: 14px;
   margin: 5px 0;
 }
-
 </style>
