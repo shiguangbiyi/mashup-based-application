@@ -3,7 +3,6 @@ import json
 import datetime
 from flask import Flask, request
 from flask_cors import CORS
-from translate import translate_text
 
 APP_KEY = 'e44b00b4c65364d34961af0e8fd18818'
 
