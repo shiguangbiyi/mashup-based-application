@@ -2,11 +2,6 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import json
-from flask import Flask, request
-from flask_cors import CORS
-
-app = Flask(__name__)
-CORS(app)
 
 def clean_data(data):
     cleaned_data = {}
@@ -15,7 +10,6 @@ def clean_data(data):
         value = re.sub(r'\[.*?\]', '', value).strip()
         cleaned_data[key] = value
 
-    # 转换为JSON格式
     json_data = json.dumps(cleaned_data, ensure_ascii=False, indent=4)
     return json_data
 
@@ -27,15 +21,14 @@ def get_baike_info(url):
     soup = BeautifulSoup(response.text, 'html.parser')
     info_tag = soup.find('div', class_="base-list-wrap")
 
-    # 获取经济概述
     abs_tag_first = soup.find('div',class_='abstract-first')
     abs_tag_second = soup.find('div', class_='abstract-second')
     print(abs_tag_first)
     print(abs_tag_second)
     html_content = str(abs_tag_first)+str(abs_tag_second)
-    # 创建一个 BeautifulSoup 对象
+
     soup = BeautifulSoup(html_content, 'html.parser')
-    # 提取所有文本内容
+
     text_content = soup.get_text()
     text_content = re.sub(r'\[\d+\]', '', text_content)
     print(text_content)
@@ -54,13 +47,8 @@ def get_baike_info(url):
     else:
         return "没有找到相关词条的基本信息。"
 
-@app.route('/get_sougou_data', methods=['GET'])
-def get_base_info():
-    keyword = request.args.get('keyword')
+
+def get_base_info(keyword):
     print(keyword)
     url = f'https://baike.sogou.com/m/fullLemma?key={keyword}'
     return get_baike_info(url)
-
-
-if __name__ == '__main__':
-    app.run(debug=True,port=5005)

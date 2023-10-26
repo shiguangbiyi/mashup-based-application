@@ -1,15 +1,9 @@
 import requests
 import json
 import datetime
-from flask import Flask, request
-from flask_cors import CORS
 
 APP_KEY = 'e44b00b4c65364d34961af0e8fd18818'
 
-app = Flask(__name__)
-CORS(app)
-
-# 请求API
 def url_builder_name(city_name):
     api = 'http://api.openweathermap.org/data/2.5/weather?q='
     unit = 'metric'
@@ -17,7 +11,6 @@ def url_builder_name(city_name):
     res = requests.get(url)
     return json.loads(res.text)
 
-# 时间格式转换
 def time_converter(time):
     converted_time = datetime.datetime.fromtimestamp(
         int(time)
@@ -69,8 +62,6 @@ def pre_processwinddeg(wind_deg):
     elif wind_deg > 337.5 and wind_deg <= 360 or wind_deg > 0 and wind_deg <= 22.5:
         return '北风'
 
-
-# 提取数据，构建字典
 def data_organizer(weather_value):
     data = {
         'city': weather_value.get('name'),
@@ -91,17 +82,9 @@ def data_organizer(weather_value):
     }
     return data
 
-@app.route('/translate', methods=['GET'])
-def get_weather_info_as_json():
-    keyword = request.args.get('keyword')
+def get_weather_info_as_json(keyword):
     weather_value = url_builder_name(keyword)
-    # 构建数据字典
     data = data_organizer(weather_value)
-    # 将数据字典转换为 JSON 格式
     json_data = json.dumps(data, ensure_ascii=False, indent=4)
     print(json_data)
     return json_data
-
-
-if __name__ == '__main__':
-    app.run(debug=True,port=5001)

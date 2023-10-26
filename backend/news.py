@@ -1,14 +1,9 @@
 import requests
 import json
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask import jsonify
 
-app = Flask(__name__)
-CORS(app)
 
-@app.route('/get_news', methods=['GET'])
-def get_news():
-    city_chinese = request.args.get('keyword')
+def get_wangyi_news(city_chinese):
     url = f'https://c.3g.163.com/nc/article/local/{city_chinese}/0-20.html'
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36',
@@ -33,6 +28,3 @@ def get_news():
 
     except Exception as e:
         return jsonify({'error': str(e)})
-
-if __name__ == '__main__':
-    app.run(debug=True,port=5004)

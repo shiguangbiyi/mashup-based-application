@@ -11,9 +11,9 @@
         世界城市信息检索系统
       </div>
       <div class="search-up">
-        <input type="text" class="search-box" placeholder="搜索城市...支持中文搜索，大部城市支持英文搜索" list="cities" @input="handleSearch" v-model="cityName">
+        <input type="text" class="search-box" placeholder="搜索城市...支持中文搜索" list="cities" @input="handleSearch" v-model="cityName">
         <datalist id="cities" class="datalist">
-          <option v-for="(city, index) in cityList" :value="city" :key="index" class="option">
+          <option v-for="(city, index) in cityList" :value="city" :key="index" class="option" @click="getResult">
             {{ city }}
           </option>
         </datalist>
@@ -25,7 +25,7 @@
         世界城市信息检索系统
       </div>
       <div class="search">
-        <input type="text" class="search-box" placeholder="搜索城市...支持中文搜索，大部城市支持英文搜索" list="cities" @input="handleSearch" v-model="cityName">
+        <input type="text" class="search-box" placeholder="搜索城市...支持中文搜索" list="cities" @input="handleSearch" v-model="cityName">
         <datalist id="cities" class="datalist">
           <option v-for="(city, index) in cityList" :value="city" :key="index" class="option">
             {{ city }}
@@ -37,6 +37,7 @@
 
     <div class="summary-container" style="margin-top: 100px;" v-if="isSearched">
       <div class="summary-card">
+        <h2 class="card-title">视觉/印象</h2>
         <div v-if="imglist && imglist.length > 0" class="image-row">
           <div class="image-col" v-for="(img, imgIndex) in imglist.slice(0, 6)" :key="imgIndex">
             <img :src="img.src" :alt="img.alt" class="image-item" />
@@ -44,14 +45,16 @@
         </div>
         <div v-else class="no-image-message">抱歉，本城市暂无图片资源</div>
         <span class="source-label">来自unsplash</span>
-        <!-- <div v-if="imglistBaidu && imglistBaidu.length > 0" class="image-row">
-          <div class="image-col" v-for="(img, imgIndex) in imglistBaidu.slice(0, 6)" :key="imgIndex">
-            <img :src="img.src" :alt="img.alt" class="image-item" />
+        <button class="card-button" @click="redirectToUnsplash()">查看更多</button>
+
+        <div v-if="imglistBing.data" class="image-row">
+          <div class="image-col" v-for="(url, index) in imglistBing.data" :key="index">
+            <img :src="url" alt="city image" class="image-item">
           </div>
         </div>
         <div v-else class="no-image-message">抱歉，本城市暂无图片资源</div>
-        <span class="source-label">来自百度图片</span> -->
-        <button class="card-button" @click="redirectToUnsplash()">查看更多</button>
+        <span class="source-label">来自必应图片</span>
+        <button class="card-button" @click="redirectToBing()">查看更多</button>
       </div>
     </div>
 
@@ -67,19 +70,23 @@
           </div>
           <hr class="info-divider" v-if="!$last">
         </div>
+        <span class="source-label">来自搜狗百科</span>
       </div>
     </div>
     
     <div class="summary-container" v-if="summary1 || summary2">
       <div class="summary-card">
         <h2 class="card-title">基本资料</h2>
+        <div class="project-report">以下是关于{{ cityChinese }}的基本资料，信息来源包括维基百科、百度百科、搜狗百科。</div>
         <p v-if="summary2 !== '没有找到相关词条的简述。' && summary2.length >= 10" class="card-content">{{ summary2 }}</p>
         <span v-if="summary2 !== '没有找到相关词条的简述。' && summary2.length >= 10" class="source-label">来自维基百科</span>
         <button v-if="summary2 !== '没有找到相关词条的简述。' && summary2.length >= 10" class="card-button" @click="redirectToWiki()">查阅详情</button>
         <p v-if="summary1 !== '没有找到相关词条的简述。'" class="card-content">{{ summary1 }}</p>
         <span v-if="summary1 !== '没有找到相关词条的简述。'" class="source-label">来自百度百科</span>
         <button v-if="summary1 !== '没有找到相关词条的简述。'" class="card-button" @click="redirectToBaidu()">查阅详情</button>
-        <p v-if="!summary1 && !summary2" class="card-content">百度百科数据获取不稳定，请打开VPN查阅维基百科</p>
+        <p v-if="summary3 !== '没有找到相关词条的简述。'" class="card-content">{{ summary3 }}</p>
+        <span v-if="summary3 !== '没有找到相关词条的简述。'" class="source-label">来自搜狗百科</span>
+        <button v-if="summary3 !== '没有找到相关词条的简述。'" class="card-button" @click="redirectToSougou()">查阅详情</button>
       </div>
     </div>
 
@@ -87,6 +94,7 @@
     <div class="economic-container" v-if="WorldBankdata[0]">
       <div class="summary-card">
         <h2 class="card-title">经济/环境</h2>
+        <div class="project-report">以下是关于{{ cityChinese }}的经济和环境相关项目的报告内容，包含城市重大项目实施、资金使用情况、目标完成情况以及项目对当地环境改善的影响等方面的数据。信息来源为世界银行。</div>
         <div class="link-list">
           <a v-for="(item, index) in WorldBankdata" :key="index" :href="item.url" target="_blank" class="link-item">
             {{ item.title }}
@@ -100,6 +108,7 @@
     <div class="economic-container" v-if="isSearched">
       <div class="summary-card">
         <h2 class="card-title">相关新闻</h2>
+        <div class="project-report">以下是关于{{ cityChinese }}的相关新闻，信息来源包括mediastack、网易新闻。mediastack包含世界大多主流媒体的最新新闻信息，具有较强权威性。另外，网易新闻仅支持国内城市新闻搜索。</div>
         <hr class="divider">
         <div class="link-list" v-if="newslist.data">
           <a v-for="(item, index) in newslist.data" :key="index" :href="item.url" target="_blank" class="link-item">
@@ -109,7 +118,7 @@
           <span class="source-label">来自mediastack</span>
         </div>
         <hr class="divider">
-        <div class="link-list" v-if="newslistWangYi.length!=0">
+        <div class="link-list" v-if="newslistWangYi">
           <a v-for="(item, index) in newslistWangYi.data" :key="index" :href="item.url" target="_blank" class="link-item">
             {{ item.title }}
             <hr class="divider">
@@ -157,23 +166,8 @@
 <script setup>
 import { ref,reactive } from 'vue';
 import axios from 'axios';
-const summary1 = ref('');
-const summary2 = ref('');
 const cityName = ref('');
 const isSearched = ref(false);
-const weatherData = reactive({
-  temp: ref(''),
-  temp_max: ref(''),
-  temp_min: ref(''),
-  humidity: ref(''),
-  pressure: ref(''),
-  sunrise: ref(''),
-  sunset: ref(''),
-  wind: ref(''),
-  wind_deg: ref(''),
-  cloudiness: ref(''),
-  description: ref('')
-});
 
 
 // 处理输入的部分，根据输入给出城市列表提示，使用了teleportAPI
@@ -219,6 +213,7 @@ const setDefaultCityName = () => {
 const imglist = ref([])
 const fetchPic = async () => {
   imglist.value = [];
+  imglistBing.value = [];
   try {
     const response = await axios.get(`https://api.unsplash.com/search/photos?page=1&query=${cityEnglish.value}&client_id=KaE2Y3RZ-mL65vgGnU52BYdj9tychGSsq86twcaY1ls`);
     const results = response.data.results;
@@ -238,35 +233,45 @@ function redirectToUnsplash() {
   const url = `https://unsplash.com/s/photos/${cityEnglish.value}`;
   window.open(url, '_blank');
 }
-// 图片展示2，来自百度图片
-// const imglistBaidu = ref([])
-// const fetchPicBaidu = async () => {
-//   try {
-//     const response = await axios.get('http://localhost:5003/search_images', {
-//       params: {
-//         keyword: cityChinese.value
-//       }
-//     });
-//     const results = response.data;
-//     results.forEach((result) => {
-//       const imgInfo = {
-//         src: result.thumbURL,
-//         alt: result.fromPageTitle,
-//       };
-//       imglist.value.push(imgInfo);
-//     });
-//   } catch (error) {
-//     console.log('请求百度图片信息时出错');
-//     console.error(error);
-//   }
-// };
+// 图片展示2,来自必应图片
+const imglistBing = ref([])
+const fetchPicBing = async () => {
+  try {
+    const response = await axios.get('http://localhost:5000/get_bing_img', {
+      params: {
+        keyword: cityChinese.value
+      }
+    });
+    imglistBing.value = response;
+  } catch (error) {
+    console.log('请求百度图片信息时出错');
+    console.error(error);
+  }
+};
+function redirectToBing() {
+  const url = `https://cn.bing.com/images/search?q=${cityChinese.value}&first=1`;
+  window.open(url, '_blank');
+}
 
 
 // 获取城市天气，来自openWeatherAPI，使用后端进行整合，使用英文搜索
 let firstPart = ''
+const weatherData = reactive({
+  temp: ref(''),
+  temp_max: ref(''),
+  temp_min: ref(''),
+  humidity: ref(''),
+  pressure: ref(''),
+  sunrise: ref(''),
+  sunset: ref(''),
+  wind: ref(''),
+  wind_deg: ref(''),
+  cloudiness: ref(''),
+  description: ref('')
+});
 const getWeather = async () => {
   try {
-    const response = await axios.get('http://localhost:5001/translate', {
+    const response = await axios.get('http://localhost:5000/get_weather', {
       params: {
         keyword: cityEnglish.value
       }
@@ -312,7 +317,7 @@ const loadmap = async () => {
 const WorldBankdata = ref([]);
 const fetchWorldBankData = async () => {
   try {
-    const response = await axios.get('http://localhost:5002/get_worldbank_data', {
+    const response = await axios.get('http://localhost:5000/get_worldbank_data', {
       params: {
         keyword: cityEnglish.value
       }
@@ -329,34 +334,23 @@ const fetchWorldBankData = async () => {
 const sougouBaseInfo = ref({});
 const fetchSougouData = async () => {
   try {
-    const response = await axios.get('http://localhost:5005/get_sougou_data', {
+    const response = await axios.get('http://localhost:5000/get_sougou_data', {
       params: {
         keyword: cityChinese.value
       }
     });
     sougouBaseInfo.value = response;
-    console.log(sougouBaseInfo)
-    console.log(sougouBaseInfo.value)
-    console.log(sougouBaseInfo.value.data)
   } catch (error) {
     console.log("请求搜狗基本信息时出错")
     console.error(error);
   }
 };
-// const data = sougouBaseInfo.data;
-// const keys = Object.keys(data);
-// const midpoint = Math.ceil(keys.length / 2);
-// const leftColumn = keys.slice(0, midpoint).reduce((obj, key) => {
-//   obj[key] = data[key];
-//   return obj;
-// }, {});
-// const rightColumn = keys.slice(midpoint).reduce((obj, key) => {
-//   obj[key] = data[key];
-//   return obj;
-// }, {});
 
 
-// 调用维基百科API和百度百科API，使用后端进行数据获取并整合
+// 获取维基百科概述、百度百科综述、搜狗百科综述，使用后端进行数据获取并整合
+const summary1 = ref('');
+const summary2 = ref('');
+const summary3 = ref('');
 const getSummary = async () => {
   let params = {};
 
@@ -373,6 +367,7 @@ const getSummary = async () => {
     const response = await axios.get('http://localhost:5000/get_summary', {params});
     summary1.value = response.data.summary1;
     summary2.value = response.data.summary2;
+    summary3.value = response.data.summary3
   } catch (error) {
     console.log("请求百科信息时出错")
     console.error(error);
@@ -386,6 +381,11 @@ function redirectToBaidu() {
   const url = `https://baike.baidu.com/item/${cityChinese.value}`;
   window.open(url, '_blank');
 }
+function redirectToSougou() {
+  const url = `https://baike.sogou.com/m/fullLemma?key=${cityChinese.value}`;
+  window.open(url, '_blank');
+}
+
 
 // 调取mediastackAPI，获取新闻信息
 const newslist = ref([])
@@ -394,7 +394,6 @@ const getnews = async() => {
   try {
     const response = await axios.get('http://api.mediastack.com/v1/news?access_key=c83a02c3414b168ce6a33859d59cb233&keywords=' + cityEnglish.value);
     newslist.value = response.data
-    console.log(newslist.value)
   } catch (error) {
     console.log("请求新闻列表时出错")
     console.error(error);
@@ -402,23 +401,31 @@ const getnews = async() => {
 }
 const getnewsWangYi = async() => {
   try {
-    const response = await axios.get('http://localhost:5004/get_news', {
+    const response = await axios.get('http://localhost:5000/get_news', {
       params: {
         keyword: cityChinese.value
       }
     });
     newslistWangYi.value=response
-    console.log(newslistWangYi.value)
   } catch (error) {
     console.log("请求网易新闻列表时出错")
     console.error(error);
   }
 }
 
+const validateString = (inputString) => {
+  const pattern = /^[A-Z][a-z]+,\s[A-Z][a-z]+,\s[A-Z][a-z]+\s\(\p{Script=Hani}+\)$/u;
+  if (!pattern.test(inputString)) {
+    return false;
+  }
+  return true;
+};
+
+// 搜索触发请求
 const getResult = async () => {
   setDefaultCityName();
   if (cityName.value === '' || cityList.value.length === 0) {
-      if(!(cityName.value === cityList.value[0])){
+      if(!validateString(cityName.value)){
           alert('搜索结果不存在，请输入正确的城市名称');
           return
       }
@@ -426,16 +433,15 @@ const getResult = async () => {
   isSearched.value = true;
   divide();
   fetchPic();
-  // fetchPicBaidu();
-  fetchSougouData();
+  fetchPicBing();
   getSummary();
+  fetchSougouData();
   loadmap();
   getWeather();
   getnews();
   getnewsWangYi();
   fetchWorldBankData();
 };
-
 </script>
 
 <style scoped>
@@ -467,13 +473,6 @@ const getResult = async () => {
 .option:hover {
   background-color: #ddd;
 }
-.image-unit {
-  display: flex;
-  flex-wrap: wrap;
-  margin-top: 20px;
-  margin-left: 30px;
-  width: 70%;
-}
 
 .image-row {
   display: flex;
@@ -484,18 +483,19 @@ const getResult = async () => {
 .image-col {
   width: 30%;
   margin-bottom: 20px;
+  margin-top: 20px;
 }
 
 .image-item {
   width: 100%;
-  height: 200px; /* 根据需要设置统一的高度 */
+  height: 200px;
   object-fit: cover;
 }
 
 .divider {
-  margin: 10px 0; /* 调整分割线的上下边距 */
-  border: 0; /* 移除默认的边框样式 */
-  border-top: 1px solid #ccc; /* 定义分割线样式 */
+  margin: 10px 0;
+  border: 0;
+  border-top: 1px solid #ccc;
 }
 #more-button {
   margin-top: 20px;
@@ -563,13 +563,6 @@ const getResult = async () => {
   width: 100%;
   z-index: 1;
 }
-.search-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 20px;
-}
-
 .search-box {
   padding: 10px;
   border: none;
@@ -607,19 +600,18 @@ const getResult = async () => {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%; /* 让顶栏宽度充满屏幕 */
-  height: 80px; /* 你可以根据需要调整高度 */
+  width: 100%; 
+  height: 80px;
   background-color: #ffffff;
   display: flex;
-  align-items: center; /* 让内容垂直居中 */
-  justify-content: space-between; /* 可以根据需要调整内容的水平布局 */
-  padding: 0 20px; /* 可以根据需要调整内边距 */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 可以根据需要添加阴影效果 */
-  z-index: 1000; /* 确保顶栏在其他元素之上 */
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
   clip-path: polygon(0 0, 71% 0, 71% 100%, 0 100%);
-  border-top-left-radius: 10px; /* 左上角圆角半径 */
-  border-bottom-right-radius: 10px; /* 左下角圆角半径 */
-  /* 其他样式 */
+  border-top-left-radius: 10px;
+  border-bottom-right-radius: 10px;
 }
 .search-button:hover {
   background-color: #207cca;
@@ -669,6 +661,14 @@ const getResult = async () => {
   font-weight: bold;
   margin-bottom: 10px;
   color: #333333;
+}
+.project-report {
+  font-family: Arial, sans-serif;
+  background-color: #f2f2f2;
+  padding: 20px;
+  border: 1px solid #ddd;
+  margin: 10px;
+  border-radius: 5px;
 }
 .info-container {
   display: flex;

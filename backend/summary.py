@@ -1,22 +1,8 @@
-import re
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import requests
-from bs4 import BeautifulSoup
-
-app = Flask(__name__)
-CORS(app)
-
-
+from flask import jsonify
 import requests
 from bs4 import BeautifulSoup
 import re
 import json
-from flask import Flask, request
-from flask_cors import CORS
-
-app = Flask(__name__)
-CORS(app)
 
 def clean_data(data):
     cleaned_data = {}
@@ -25,7 +11,6 @@ def clean_data(data):
         value = re.sub(r'\[.*?\]', '', value).strip()
         cleaned_data[key] = value
 
-    # 转换为JSON格式
     json_data = json.dumps(cleaned_data, ensure_ascii=False, indent=4)
     return json_data
 
@@ -38,16 +23,12 @@ def get_sougou_summary(keyword):
         response = requests.get(url, headers=headers)
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # 获取概述
         abs_tag_first = soup.find('div',class_='abstract-first')
         abs_tag_second = soup.find('div', class_='abstract-second')
-        print(abs_tag_first)
-        print(abs_tag_second)
         html_content = str(abs_tag_first)+str(abs_tag_second)
         soup = BeautifulSoup(html_content, 'html.parser')
         text_content = soup.get_text()
         text_content = re.sub(r'\[\d+\]', '', text_content)
-        print(text_content)
         return text_content
     except requests.exceptions.RequestException as e:
         print(f"Error: {e}")
@@ -87,9 +68,7 @@ def get_wikipedia_summary(title):
 
     return summary_text
 
-@app.route('/get_summary', methods=['GET'])
-def get_summary():
-    keyword = request.args.get('keyword')
+def get_summary(keyword):
     if not keyword:
         return jsonify({'error': 'Please provide a keyword parameter'}), 400
 
@@ -108,6 +87,3 @@ def get_summary():
         return jsonify(response_data)
     else:
         return jsonify({'error': 'Failed to retrieve summary'}), 500
-
-if __name__ == '__main__':
-    app.run(debug=True)
