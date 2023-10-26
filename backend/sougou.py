@@ -2,7 +2,6 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import json
-import time
 from flask import Flask, request
 from flask_cors import CORS
 
@@ -27,7 +26,21 @@ def get_baike_info(url):
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, 'html.parser')
     info_tag = soup.find('div', class_="base-list-wrap")
-    print(info_tag)
+    # print(info_tag)
+
+    # 获取经济概述
+    abs_tag_first = soup.find('div',class_='abstract-first')
+    abs_tag_second = soup.find('div', class_='abstract-second')
+    print(abs_tag_first)
+    print(abs_tag_second)
+    html_content = str(abs_tag_first)+str(abs_tag_second)
+    # 创建一个 BeautifulSoup 对象
+    soup = BeautifulSoup(html_content, 'html.parser')
+    # 提取所有文本内容
+    text_content = soup.get_text()
+    text_content = re.sub(r'\[\d+\]', '', text_content)
+    print(text_content)
+
     if info_tag:
         info_dict = {}
         items = info_tag.find_all('strong')
@@ -46,27 +59,9 @@ def get_baike_info(url):
 def get_base_info():
     keyword = request.args.get('keyword')
     print(keyword)
-    url = 'https://www.sogou.com/web'
-    param = {
-        'query': keyword
-    }
-    # UA伪装
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36'
-    }
-    # step2 发送请求
-    response = requests.get(url=url, params=param, headers=headers)
-    # step3 获取响应数据
-    soup = BeautifulSoup(response.text, 'html.parser')
-    info_tag = soup.find('p', class_ ='star-wiki space-txt')
-    info_str = str(info_tag)
-    if info_tag:
-        url = re.search('href="([^"]+)"', info_str).group(1)
-        print(url)
-        return get_baike_info(url)
-    else:
-        print("数据获取异常")
-        return "数据获取异常"
+    url = f'https://baike.sogou.com/m/fullLemma?key={keyword}'
+    return get_baike_info(url)
+
 
 if __name__ == '__main__':
     app.run(debug=True,port=5005)

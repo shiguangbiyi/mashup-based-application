@@ -7,7 +7,53 @@ from bs4 import BeautifulSoup
 app = Flask(__name__)
 CORS(app)
 
-def get_baike_summary(keyword):
+
+import requests
+from bs4 import BeautifulSoup
+import re
+import json
+from flask import Flask, request
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)
+
+def clean_data(data):
+    cleaned_data = {}
+    for key, value in data.items():
+        key = re.sub(r'\s+', '', key).strip()
+        value = re.sub(r'\[.*?\]', '', value).strip()
+        cleaned_data[key] = value
+
+    # 转换为JSON格式
+    json_data = json.dumps(cleaned_data, ensure_ascii=False, indent=4)
+    return json_data
+
+def get_sougou_summary(keyword):
+    url = f'https://baike.sogou.com/m/fullLemma?key={keyword}'
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+    }
+    try:
+        response = requests.get(url, headers=headers)
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # 获取概述
+        abs_tag_first = soup.find('div',class_='abstract-first')
+        abs_tag_second = soup.find('div', class_='abstract-second')
+        print(abs_tag_first)
+        print(abs_tag_second)
+        html_content = str(abs_tag_first)+str(abs_tag_second)
+        soup = BeautifulSoup(html_content, 'html.parser')
+        text_content = soup.get_text()
+        text_content = re.sub(r'\[\d+\]', '', text_content)
+        print(text_content)
+        return text_content
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {e}")
+        return "没有找到相关词条的简述。"
+
+def get_baidu_summary(keyword):
     url = f"https://baike.baidu.com/item/{keyword}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
@@ -34,7 +80,7 @@ def get_wikipedia_summary(title):
         if not summary_text:
             summary_text = "没有找到相关词条的简述。"
         else:
-            summary_text = re.sub(r'\[\d+\]', '', summary_text)  # 去除[数字]文段
+            summary_text = re.sub(r'\[\d+\]', '', summary_text)
     except requests.exceptions.RequestException as e:
         print(f"Error: {e}")
         summary_text = "没有找到相关词条的简述。"
@@ -47,14 +93,17 @@ def get_summary():
     if not keyword:
         return jsonify({'error': 'Please provide a keyword parameter'}), 400
 
-    summary1 = get_baike_summary(keyword)
+    summary1 = get_baidu_summary(keyword)
     summary2 = get_wikipedia_summary(keyword)
+    summary3 = get_sougou_summary(keyword)
     response_data = {}
-    if summary1 or summary2:
+    if summary1 or summary2 or summary3:
         if summary1:
             response_data['summary1'] = summary1
         if summary2:
             response_data['summary2'] = summary2
+        if summary3:
+            response_data['summary3'] = summary3
         print(response_data)
         return jsonify(response_data)
     else:
