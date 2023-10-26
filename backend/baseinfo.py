@@ -26,7 +26,6 @@ def get_baike_info(url):
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, 'html.parser')
     info_tag = soup.find('div', class_="base-list-wrap")
-    # print(info_tag)
 
     # 获取经济概述
     abs_tag_first = soup.find('div',class_='abstract-first')
